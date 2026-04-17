@@ -1,0 +1,10 @@
+/vendor/
+/node_modules/
+.env
+.env.local
+.DS_Store
+*.log
+/storage/
+/render-api/node_modules/
+/render-api/.env
+/tmp/
