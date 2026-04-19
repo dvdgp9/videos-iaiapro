@@ -152,22 +152,124 @@ videos-iaiapro/
 13. Cuotas por usuario, rate limiting, logs, backups de MySQL, monitorización básica (uptime render-api).
 14. Documentación de despliegue en `deploy/README.md`.
 
+## Plan Revisado (2026-04-19)
+
+Tras el avance del usuario en el VPS y una propuesta alternativa recibida (super prompt), se ratifica la arquitectura original con estos ajustes:
+
+### Arquitectura definitiva (Opción A + Monorepo)
+
+```
+https://videos.iaiapro.com/
+    /                 → PHP (auth, CRUD proyectos, plantillas, uploads, UI)
+    /storage/*        → nginx static (MP4s, thumbnails, uploads)
+    (interno only)    → Node "render worker" escuchando en 127.0.0.1:3001
+```
+
+- **PHP vanilla** concentra toda la lógica de negocio y acceso a MySQL (PDO).
+- **Node** se reduce a un **worker de render**: recibe `POST /render` con `{job_id, composition_html, assets[], output_path}`, ejecuta `hyperframes render`, emite progreso y resultado. No toca BBDD. No público.
+- **Nginx**: se retira el proxy público `/api/*` → Node (estaba expuesto sin auth). Queda sólo accesible por `127.0.0.1` desde PHP.
+- **Estáticos**: `/storage/*` servido por nginx desde `/home/dvdgp/data/videos/public/` (ruta a definir en `deploy/nginx`).
+
+### Monorepo
+
+```
+videos-iaiapro/
+├── frontend/           # PHP vanilla (DocumentRoot = frontend/public)
+│   ├── public/
+│   └── src/
+├── backend/            # Node worker (systemd WorkingDirectory)
+│   ├── src/server.js
+│   └── package.json
+├── db/migrations/
+├── deploy/
+│   ├── nginx/          # vhost versionado
+│   └── systemd/        # videos-backend.service versionado
+└── .cursor/
+```
+
+- Despliegue: `git pull` en `/home/dvdgp/apps/videos-iaiapro` → `systemctl restart videos-backend` (+ cualquier composer install futuro).
+- El `videos-backend.service` cambia `WorkingDirectory` y `ExecStart` a `backend/src/server.js`.
+
+### Producto: híbrido empezando por plantillas (v1 sin LLM)
+
+**MVP v1** (actual):
+- Registro/login.
+- Usuario ve catálogo de **plantillas predefinidas** (código Hyperframes en `backend/templates/`).
+- Crea proyecto eligiendo plantilla + rellenando campos (title, subtitle, description, cta, brand_name, colores, duración, formato).
+- Sube assets (logo, imagen principal, galería).
+- Lanza render → worker Node compila la plantilla con los datos del proyecto → MP4.
+- Ve estado (queued/rendering/done/failed), preview y descarga.
+
+**MVP v2** (después, cuando v1 esté estable):
+- Añadir chat con **OpenRouter** (`google/gemini-3-flash-preview` o el que toque) para personalizar la plantilla elegida en lenguaje natural ("hazlo más oscuro", "cambia la música").
+- El LLM devuelve un HTML modificado que reemplaza el compilado desde la plantilla.
+- Se activan las tablas `prompts` (ya creadas) y la columna `composition_html` en `projects` (también ya creada).
+
+### Cambios en el esquema MySQL (migración 0002)
+
+Necesarios para soportar plantillas con campos en v1:
+
+- `projects`: añadir columnas `template_id VARCHAR(64)`, `format ENUM('16:9','9:16','1:1')`, `content_json JSON`, `style_json JSON`, `render_progress TINYINT UNSIGNED`, `render_message VARCHAR(255)`.
+- `projects.status`: ampliar ENUM a `('draft','queued','rendering','completed','failed','archived')` para cubrir el ciclo completo.
+- `assets`: añadir `role ENUM('logo','main_image','gallery','extra') NOT NULL DEFAULT 'extra'` y `position SMALLINT UNSIGNED NOT NULL DEFAULT 0` para ordenar la galería.
+
+La migración `0001` queda tal cual (ya ejecutada). Se añadirá `0002_templates_v1.sql` al avanzar.
+
+### API pública (PHP) v1
+
+Convención: `/api/*` ahora servido por PHP (no por Node). Auth por cookie de sesión.
+
+- `POST /api/auth/register` `{email,password,name}` → 201 + sesión.
+- `POST /api/auth/login` `{email,password}` → 200 + sesión.
+- `POST /api/auth/logout`.
+- `GET  /api/me`.
+- `GET  /api/templates` → lista de plantillas (leídas desde `backend/templates/`, cacheadas en PHP).
+- `GET  /api/projects`.
+- `POST /api/projects` `{name,template_id,format,duration,content,style}`.
+- `GET  /api/projects/:id`.
+- `PUT  /api/projects/:id`.
+- `DELETE /api/projects/:id`.
+- `POST /api/projects/:id/assets` (multipart: `logo`, `main_image`, `gallery[]`).
+- `POST /api/projects/:id/render` → PHP crea fila en `renders`, llama a Node `http://127.0.0.1:3001/render`.
+- `GET  /api/projects/:id/status` → progreso + urls de thumbnail/preview/download.
+- `GET  /api/projects/:id/download` → redirect 302 a `/storage/...`.
+
+### API interna (Node worker) v1
+
+- `GET  /health`.
+- `POST /render` `{job_id, composition_html, assets_dir, output_path, width, height, duration}` → 202 accepted, encola y responde.
+- `GET  /render/:job_id` → `{status, progress, message, error?}`.
+- Callback opcional: Node hace `POST http://127.0.0.1/api/internal/render-callback` (token compartido) cuando cambia estado — evita polling del lado PHP. **Para v1 arrancamos con polling** (simpler) y se puede evolucionar a callback.
+
 ## Project Status Board
 
-- [ ] 0.1 Resolver preguntas abiertas (bloqueante)
-- [x] 0.2 Bootstrap del repo (pendiente verificación manual del usuario)
-- [ ] 0.3 Migraciones MySQL iniciales
-- [ ] 1.4 Probar Hyperframes en local
-- [ ] 1.5 render-api mínima
-- [ ] 1.6 Provisionar VPS Hetzner
-- [ ] 2.7 Auth + layout PHP
-- [ ] 2.8 Integración OpenRouter
-- [ ] 2.9 CRUD proyectos + preview
-- [ ] 2.10 Upload assets
-- [ ] 2.11 Render + polling
-- [ ] 2.12 Chat de edición
-- [ ] 3.13 Hardening
-- [ ] 3.14 Docs de despliegue
+### Hecho
+
+- [x] 0.1 Preguntas abiertas resueltas (auth propia, storage disco VPS, modelo `google/gemini-3-flash-preview`, PHP vanilla, MVP confirmado y re-confirmado como "plantillas-first" v1).
+- [x] 0.2 Bootstrap del repo (PHP vanilla + router + .env loader).
+- [x] 0.3 Migración 0001 (users/sessions/projects/assets/renders/prompts). **Ejecutada por el usuario en VPS.**
+- [x] 1.6 VPS provisionado por el usuario (Ubuntu 22.04, Node 22, FFmpeg, Chrome headless, Hyperframes, systemd `videos-backend`, nginx + SSL Let's Encrypt, `/api/health` OK).
+
+### Replanificación v1 (plantillas, sin LLM)
+
+- [x] **R.1 Reorganizar monorepo** (2026-04-19): `public/` → `frontend/public/`, `src/` → `frontend/src/`, `composer.json` → `frontend/composer.json`. Creado `backend/` con `package.json` alineado al del servidor y `server.js` placeholder (que mantiene `/health` + compat `/api/health` hasta el switch de nginx). Borrado `render-api/`. Creadas `deploy/nginx/` y `deploy/systemd/`. `frontend/src/bootstrap.php` ajustado para leer `.env` del root del monorepo.
+- [x] **R.2 Migración 0002** (2026-04-19): `db/migrations/0002_templates_v1.sql` escrita. Cambios: `projects` (+`template_id`, `format`, `content_json`, `style_json`, `render_progress`, `render_message`; `status` ampliado) y `assets` (+`role`, `position`). Pendiente ejecución en el VPS por el usuario.
+- [ ] **R.3 Backend Node worker mínimo**: `backend/src/server.js` con `GET /health`, `POST /render`, `GET /render/:id`. Ejecuta `hyperframes render` por `child_process`. Cola in-memory (simple array, 1 worker concurrente — respeta los 2 cores/3.7GB del VPS). Guarda MP4 en `/home/dvdgp/data/videos/renders/<job_id>.mp4`.
+- [ ] **R.4 Primera plantilla Hyperframes**: `backend/templates/basic-promo/` con `composition.html.tmpl` (placeholders `{{title}}`, `{{subtitle}}`, `{{primary_color}}`, etc.) + `meta.json` (campos editables, aspect ratios soportados, duración recomendada). **Criterio de éxito**: desde curl `POST /render` con la plantilla compilada genera un MP4 real.
+- [ ] **R.5 Reconfigurar nginx + systemd en VPS**: retirar proxy público `/api/*` → Node; añadir vhost PHP (FPM) como DocumentRoot de `frontend/public/`; añadir location `/storage/` sirviendo `/home/dvdgp/data/videos/public/`; bloquear puerto 3001 a `127.0.0.1`. Actualizar `videos-backend.service` para apuntar al nuevo path en el monorepo. **Versionar en `deploy/nginx/` y `deploy/systemd/`.**
+- [ ] **R.6 Auth PHP**: registro/login/logout/me con sesiones en tabla `sessions`. Password con `password_hash(..., PASSWORD_ARGON2ID)`. Rate limit básico en login.
+- [ ] **R.7 CRUD plantillas + proyectos (PHP)**: `GET /api/templates` (lee `backend/templates/`), `POST/GET/PUT/DELETE /api/projects`. Validación estricta de `template_id`, `format`, campos.
+- [ ] **R.8 Uploads de assets (PHP)**: multipart a `/home/dvdgp/data/videos/uploads/<user_id>/<project_id>/`. Validar MIME + tamaño. Registrar en tabla `assets` con `role`.
+- [ ] **R.9 Render end-to-end**: `POST /api/projects/:id/render` → PHP compila plantilla (sustituye placeholders) → crea fila `renders` → `curl` a Node → polling desde UI con `GET /api/projects/:id/status`. URLs de thumbnail/preview/download en `/storage/...`.
+- [ ] **R.10 UI mínima PHP**: dashboard, catálogo de plantillas, wizard de creación (3 pasos: plantilla → contenido → assets), vista de proyecto con estado y preview, login/register.
+- [ ] **R.11 Hardening v1**: cuotas (minutos render/mes y MB storage) aplicadas en endpoints relevantes, CSRF en forms PHP, logs rotados, backup cron de MySQL.
+- [ ] **R.12 Docs despliegue** en `deploy/README.md`.
+
+### Fase v2 (post-MVP v1, no priorizado aún)
+
+- [ ] V2.1 Integración OpenRouter (`google/gemini-3-flash-preview`) para chat de personalización sobre plantilla.
+- [ ] V2.2 Historial en tabla `prompts`.
+- [ ] V2.3 Preview en iframe con el HTML compilado antes de renderizar MP4.
 
 ## Decisions Log
 
@@ -177,13 +279,44 @@ videos-iaiapro/
 - **VPS**: usuario tiene acceso SSH y panel de control. SO objetivo: Ubuntu 24.04 LTS.
 - **DNS `videos.iaiapro.com`**: gestionado por el usuario, sin bloqueo.
 - **Stack PHP**: **PHP vanilla 8.2+** (sin Laravel/Slim). Router mínimo propio, PDO para MySQL, sesiones nativas. Composer opcional sólo para dependencias puntuales (p.ej. `guzzlehttp/guzzle` para llamadas a OpenRouter / render-api, o `phpdotenv`). Se decidirá caso a caso.
-- **Alcance MVP**: confirmado (login, CRUD proyectos desde prompt, preview en iframe, render MP4 con polling, chat de edición iterativo). Fuera: timeline visual, biblioteca compartida, colaboración, billing.
+- **Alcance MVP v1 (19/abr, REVISADO)**: **plantillas-first, sin LLM**. Catálogo de plantillas Hyperframes + wizard de creación (plantilla → campos → assets) + render MP4 + descarga. Multiusuario y cuotas sí. LLM/OpenRouter → v2.
+- **Arquitectura (19/abr)**: Opción A — PHP concentra toda la lógica; Node es worker de render escuchando sólo en `127.0.0.1:3001`. Nginx retira el proxy público `/api/*` → Node. Monorepo con `frontend/` (PHP) y `backend/` (Node).
+- **Despliegue**: repo clonado en VPS como `/home/dvdgp/apps/videos-iaiapro`. Se actualiza el `systemd` unit para apuntar a `backend/src/server.js`. Trabajo directamente contra servidor (no local dev).
 
 ## Current Status / Progress Tracking
 
 - 2026-04-17: Plan inicial redactado y decisiones firmadas.
-- 2026-04-17: **0.2 Bootstrap del repo** ejecutado. Estructura creada (`public/`, `src/`, `db/migrations/`, `render-api/`, `deploy/`), router PHP mínimo, cargador `.env`, autoloader PSR-4 manual (sin dependencia obligatoria de Composer), `composer.json` opcional, `.env.example`, `.editorconfig`, `.gitignore`, `README.md`. Endpoint `/` muestra OK y `/health` devuelve JSON.
-- Pendiente de verificación manual del usuario (ver comandos abajo).
+- 2026-04-17: **0.2 Bootstrap del repo** ejecutado. Estructura creada, router PHP mínimo, `.env` loader, autoloader PSR-4 manual. `/` y `/health` responden.
+- 2026-04-17: `git init` + commit inicial realizados. Remote `origin` apuntando a `https://github.com/dvdgp9/videos-iaiapro.git` (push pendiente del usuario con sus credenciales).
+- 2026-04-17: **0.3 Migraciones MySQL** escrita en `db/migrations/0001_init.sql`. Tablas: `users`, `sessions`, `projects`, `assets`, `renders`, `prompts`, `schema_migrations`. Pendiente de ejecución manual por el usuario.
+
+## Server Snapshot (2026-04-19, via SSH root@91.98.155.109)
+
+- **OS**: Ubuntu 22.04 (kernel 5.15), hostname `server.example.com`.
+- **Panel**: Hestia CP (templates default).
+- **Stack web**: `nginx :443` → `apache :8443` (SSL internal) → `php-fpm 8.3`. HTTP `:80` → `apache :8080`.
+- **DocumentRoot**: `/home/dvdgp/web/videos.iaiapro.com/public_html/`.
+- **SSL**: Let's Encrypt activo, cert en `/home/dvdgp/conf/web/videos.iaiapro.com/ssl/`.
+- **BBDD**: MariaDB 11.4.10-ubu2204. Base `dvdgp_videos`, user `dvdgp_vid_usr`, migración 0001 **ejecutada** (7 tablas presentes).
+- **PHP**: 8.3.30 CLI + php-fpm 8.3 (running).
+- **Node**: 22.x. `videos-backend.service` activo, escucha en `127.0.0.1:3001`, `/api/health` OK.
+- **Hyperframes**: 0.4.6 (en `/home/dvdgp/apps/videos-backend/node_modules`).
+- **Datos**: `/home/dvdgp/data/videos/{uploads,renders,temp,projects,smoke-test}`. Ownership `dvdgp:dvdgp` excepto `projects/` que es `root:root` (a corregir).
+- **Nginx includes relevantes** (todos bajo `/home/dvdgp/conf/web/videos.iaiapro.com/`):
+  - `nginx.conf` y `nginx.ssl.conf` (default Hestia, **no modificar**).
+  - `nginx.conf_api` y `nginx.ssl.conf_api` (proxy `/api` y `/api/*` → `127.0.0.1:3001`, **modificables**).
+  - `nginx.conf_letsencrypt` (ACME challenge).
+- **systemd `videos-backend.service`**: usuario `dvdgp`, WorkingDirectory `/home/dvdgp/apps/videos-backend`, EnvironmentFile `/home/dvdgp/apps/videos-backend/.env` (sólo contiene `PORT`).
+- **Repo monorepo NO clonado aún** en `/home/dvdgp/apps/videos-iaiapro/`.
+
+### Consecuencias para el plan
+
+- **R.5 simplificada**: aprovechamos el stack Hestia tal cual.
+  - `/home/dvdgp/web/videos.iaiapro.com/public_html` → symlink a `/home/dvdgp/apps/videos-iaiapro/frontend/public/`. Apache+PHP-FPM sirve el PHP sin tocar Hestia templates.
+  - Los includes `nginx.conf_api` y `nginx.ssl.conf_api` se **vacían** (o sustituyen por la config de `/storage/`). `/api/*` pasa a ir al flujo nginx → apache → PHP.
+  - Nuevo include `nginx.conf_storage` + `nginx.ssl.conf_storage` servirá `/storage/` desde `/home/dvdgp/data/videos/public/` (nginx static, sin pasar por Apache).
+  - `videos-backend.service`: `WorkingDirectory` y `ExecStart` al nuevo path; `EnvironmentFile` al `.env` común del monorepo.
+- **R.3 reescritura del Node**: el `server.js` actual es trivial; se reemplaza entero. Quitamos el prefijo `/api` (PHP se queda con él): endpoints Node serán `/health`, `/render`, `/render/:id` — sin prefijo.
 
 ## Executor's Feedback or Assistance Requests
 

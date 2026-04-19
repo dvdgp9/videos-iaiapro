@@ -1,0 +1,23 @@
+{
+  "name": "videos-backend",
+  "version": "0.1.0",
+  "description": "Internal render worker for videos.iaiapro.com. Wraps the hyperframes CLI, listens only on 127.0.0.1. Called by the PHP frontend via HTTP.",
+  "private": true,
+  "type": "module",
+  "main": "src/server.js",
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "node --watch src/server.js",
+    "doctor": "hyperframes doctor"
+  },
+  "engines": {
+    "node": ">=22"
+  },
+  "dependencies": {
+    "dotenv": "^17.4.2",
+    "express": "^5.2.1",
+    "hyperframes": "^0.4.6",
+    "multer": "^2.1.1"
+  },
+  "license": "UNLICENSED"
+}

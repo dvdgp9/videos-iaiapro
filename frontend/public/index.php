@@ -1,6 +1,7 @@
 <?php
 declare(strict_types=1);
 
+// frontend/public/index.php -> frontend/src/bootstrap.php
 require_once dirname(__DIR__) . '/src/bootstrap.php';
 
 use App\Http\Router;

@@ -17,12 +17,15 @@ spl_autoload_register(static function (string $class): void {
 });
 
 // Also include composer autoload if present (for future dependencies).
+// frontend/src -> frontend/vendor/autoload.php (when composer install runs in frontend/).
 $composerAutoload = dirname(__DIR__) . '/vendor/autoload.php';
 if (is_file($composerAutoload)) {
     require_once $composerAutoload;
 }
 
-Env::load(dirname(__DIR__) . '/.env');
+// .env lives at the monorepo root (shared between frontend PHP and backend Node).
+// frontend/src -> ../../.env
+Env::load(dirname(__DIR__, 2) . '/.env');
 
 date_default_timezone_set('UTC');
 
