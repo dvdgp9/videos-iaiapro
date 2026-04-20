@@ -12,7 +12,9 @@ use App\Http\Middleware;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\TemplatesController;
 use App\Http\Controllers\ProjectsController;
+use App\Http\Controllers\ProjectsPageController;
 use App\Http\Controllers\RendersController;
+use App\Http\Controllers\AssetsController;
 
 // Built-in PHP server: serve static files directly.
 if (PHP_SAPI === 'cli-server') {
@@ -97,5 +99,15 @@ $router->delete('/api/projects/{id}', [ProjectsController::class, 'destroy']);
 // --- Render ---
 $router->post('/api/projects/{id}/render', [RendersController::class, 'start']);
 $router->get ('/api/projects/{id}/status', [RendersController::class, 'status']);
+
+// --- Assets (uploads) ---
+$router->get   ('/api/projects/{id}/assets',        [AssetsController::class, 'index']);
+$router->post  ('/api/projects/{id}/assets',        [AssetsController::class, 'store']);
+$router->delete('/api/projects/{id}/assets/{role}', [AssetsController::class, 'destroy']);
+
+// --- HTML pages: projects workspace ---
+$router->get('/projects',       [ProjectsPageController::class, 'index']);
+$router->get('/projects/new',   [ProjectsPageController::class, 'create']);
+$router->get('/projects/{id}',  [ProjectsPageController::class, 'show']);
 
 $router->dispatch($_SERVER['REQUEST_METHOD'] ?? 'GET', $_SERVER['REQUEST_URI'] ?? '/');

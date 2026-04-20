@@ -21,7 +21,8 @@ use App\Http\View;
         </div>
     </div>
 
-    <p style="margin-top:2rem; color:var(--muted);">
-        Las plantillas y el wizard de creación llegan en el siguiente paso del plan (R.7/R.10).
-    </p>
+    <div style="margin-top:2rem; display:flex; gap:1rem;">
+        <a class="btn" href="/projects">Ver mis proyectos</a>
+        <a class="btn secondary" href="/projects/new">+ Nuevo proyecto</a>
+    </div>
 </div>

@@ -1,0 +1,66 @@
+/* Additional styles on top of layout.php's base theme. */
+.toolbar { display:flex; justify-content:space-between; align-items:center; margin-bottom:1.5rem; gap:1rem; }
+.toolbar h1 { margin:0; }
+
+.grid { display:grid; grid-template-columns: repeat(auto-fill, minmax(240px,1fr)); gap:1rem; }
+.grid .item {
+    background: var(--card); border:1px solid var(--border); border-radius:10px; padding:1rem;
+    display:flex; flex-direction:column; gap:.5rem;
+    transition: border-color .15s;
+}
+.grid .item:hover { border-color: var(--accent); }
+.grid .item a { color:var(--text); text-decoration:none; font-weight:600; }
+.grid .item .meta { color:var(--muted); font-size:.8rem; }
+.grid .item .badge { display:inline-block; padding:.1rem .5rem; border-radius:99px; font-size:.7rem; background:#0b1222; color:var(--muted); }
+.grid .item .badge.ok { background:rgba(16,185,129,.15); color:#86efac; }
+.grid .item .badge.err { background:rgba(239,68,68,.15); color:#fecaca; }
+.grid .item .badge.run { background:rgba(245,158,11,.15); color:#fcd34d; }
+
+.empty { padding:3rem 1rem; text-align:center; color:var(--muted); border:1px dashed var(--border); border-radius:10px; }
+
+.form-grid { display:grid; grid-template-columns: 1fr 1fr; gap:1.5rem; }
+@media (max-width: 720px) { .form-grid { grid-template-columns:1fr; } }
+
+.field { margin-bottom:1rem; }
+.field textarea {
+    width:100%; padding:.7rem .9rem; border-radius:8px; border:1px solid var(--border);
+    background:#0b1222; color:var(--text); font-size:1rem; font-family:inherit; resize:vertical; min-height:80px;
+}
+.field select {
+    width:100%; padding:.7rem .9rem; border-radius:8px; border:1px solid var(--border);
+    background:#0b1222; color:var(--text); font-size:1rem;
+}
+.field input[type=color] { height:42px; width:100%; background:#0b1222; border:1px solid var(--border); border-radius:8px; cursor:pointer; }
+.field .hint { color:var(--muted); font-size:.8rem; margin-top:.3rem; }
+.field .err-inline { color:#fecaca; font-size:.8rem; margin-top:.3rem; }
+
+.section-title { font-size:.85rem; text-transform:uppercase; letter-spacing:.08em; color:var(--muted); margin:2rem 0 1rem; }
+
+.preview { position:relative; background:#000; border-radius:10px; overflow:hidden; aspect-ratio:16/9; display:flex; align-items:center; justify-content:center; }
+.preview.portrait { aspect-ratio:9/16; max-width:360px; margin:0 auto; }
+.preview.square { aspect-ratio:1/1; max-width:480px; margin:0 auto; }
+.preview video { width:100%; height:100%; object-fit:contain; background:#000; }
+.preview .placeholder { color:var(--muted); font-size:.9rem; text-align:center; padding:2rem; }
+
+.asset-row { display:flex; align-items:center; gap:1rem; padding:.75rem; border:1px solid var(--border); border-radius:8px; margin-bottom:.5rem; }
+.asset-row .thumb { width:56px; height:56px; border-radius:6px; background:#0b1222; border:1px solid var(--border); object-fit:cover; flex-shrink:0; }
+.asset-row .thumb.empty { display:flex; align-items:center; justify-content:center; color:var(--muted); font-size:.75rem; }
+.asset-row .info { flex:1; min-width:0; }
+.asset-row .info .name { font-weight:600; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.asset-row .info .meta { color:var(--muted); font-size:.8rem; }
+.asset-row .actions { display:flex; gap:.5rem; }
+
+.btn.small { padding:.4rem .8rem; font-size:.85rem; }
+.btn.danger { background:var(--danger); color:#fff; }
+
+.render-status { display:flex; align-items:center; gap:.5rem; margin-top:1rem; color:var(--muted); font-size:.9rem; }
+.render-status .dot { width:8px; height:8px; border-radius:50%; background:var(--muted); }
+.render-status.running .dot { background:var(--accent); animation:pulse 1s ease-in-out infinite; }
+.render-status.ok .dot { background:var(--ok); }
+.render-status.err .dot { background:var(--danger); }
+@keyframes pulse { 0%,100%{opacity:.4} 50%{opacity:1} }
+
+.progress { height:6px; background:#0b1222; border-radius:3px; overflow:hidden; margin-top:.5rem; }
+.progress > div { height:100%; background:var(--accent); width:0; transition:width .3s ease; }
+
+.hidden { display:none !important; }
