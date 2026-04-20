@@ -12,6 +12,7 @@ use App\Http\Middleware;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\TemplatesController;
 use App\Http\Controllers\ProjectsController;
+use App\Http\Controllers\RendersController;
 
 // Built-in PHP server: serve static files directly.
 if (PHP_SAPI === 'cli-server') {
@@ -92,5 +93,9 @@ $router->post  ('/api/projects',      [ProjectsController::class, 'store']);
 $router->get   ('/api/projects/{id}', [ProjectsController::class, 'show']);
 $router->put   ('/api/projects/{id}', [ProjectsController::class, 'update']);
 $router->delete('/api/projects/{id}', [ProjectsController::class, 'destroy']);
+
+// --- Render ---
+$router->post('/api/projects/{id}/render', [RendersController::class, 'start']);
+$router->get ('/api/projects/{id}/status', [RendersController::class, 'status']);
 
 $router->dispatch($_SERVER['REQUEST_METHOD'] ?? 'GET', $_SERVER['REQUEST_URI'] ?? '/');
