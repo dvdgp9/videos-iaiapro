@@ -3,8 +3,6 @@
 /** @var array $template */
 use App\Http\View;
 ?>
-<link rel="stylesheet" href="/assets/app.css">
-
 <div class="toolbar">
     <h1><?= View::e($project['name']) ?></h1>
     <div style="display:flex; gap:.5rem;">
@@ -14,7 +12,7 @@ use App\Http\View;
     </div>
 </div>
 
-<div class="form-grid">
+<div class="form-grid project-shell">
     <div>
         <div class="section-title">Vista previa</div>
         <?php

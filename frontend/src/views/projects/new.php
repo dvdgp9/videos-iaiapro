@@ -2,14 +2,12 @@
 /** @var array $templates */
 use App\Http\View;
 ?>
-<link rel="stylesheet" href="/assets/app.css">
-
 <div class="toolbar">
     <h1>Nuevo proyecto</h1>
     <a class="btn secondary" href="/projects">Cancelar</a>
 </div>
 
-<div class="card">
+<div class="project-shell">
     <form id="new-project-form">
         <div class="form-grid">
             <div class="field">
@@ -37,7 +35,7 @@ use App\Http\View;
 
         <div id="form-error" class="alert err hidden"></div>
 
-        <div style="margin-top:1.5rem; display:flex; gap:1rem;">
+        <div class="hero-actions" style="margin-top:1.2rem;">
             <button type="submit" class="btn">Crear y editar</button>
             <a href="/projects" class="btn secondary">Cancelar</a>
         </div>

@@ -3,8 +3,6 @@
 /** @var array $projects */
 use App\Http\View;
 ?>
-<link rel="stylesheet" href="/assets/app.css">
-
 <div class="toolbar">
     <h1>Tus proyectos</h1>
     <a class="btn" href="/projects/new">+ Nuevo proyecto</a>
@@ -16,7 +14,7 @@ use App\Http\View;
         <a class="btn" href="/projects/new">Crear el primero</a>
     </div>
 <?php else: ?>
-    <div class="grid">
+    <div class="grid project-shell">
         <?php foreach ($projects as $p): ?>
             <div class="item">
                 <a href="/projects/<?= (int) $p['id'] ?>"><?= View::e($p['name']) ?></a>
