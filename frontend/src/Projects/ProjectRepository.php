@@ -108,23 +108,28 @@ final class ProjectRepository
     }
 
     /**
-     * Hydrate a row for API responses: parse JSON columns, drop internals.
+     * Hydrate a full row (including JSON columns) for the detail endpoint.
      *
      * @param array<string,mixed> $row
      * @return array<string,mixed>
      */
     public static function toApi(array $row): array
     {
-        $content = [];
-        $style   = [];
-        if (!empty($row['content_json'])) {
-            $decoded = json_decode((string) $row['content_json'], true);
-            if (is_array($decoded)) $content = $decoded;
-        }
-        if (!empty($row['style_json'])) {
-            $decoded = json_decode((string) $row['style_json'], true);
-            if (is_array($decoded)) $style = $decoded;
-        }
+        $base = self::toApiSummary($row);
+        $base['content'] = self::decodeJsonObject($row['content_json'] ?? null);
+        $base['style']   = self::decodeJsonObject($row['style_json']   ?? null);
+        return $base;
+    }
+
+    /**
+     * Summary projection used in list responses — omits content/style to
+     * keep payloads small.
+     *
+     * @param array<string,mixed> $row
+     * @return array<string,mixed>
+     */
+    public static function toApiSummary(array $row): array
+    {
         return [
             'id'              => (int) $row['id'],
             'name'            => (string) $row['name'],
@@ -133,8 +138,6 @@ final class ProjectRepository
             'status'          => (string) ($row['status'] ?? 'draft'),
             'width'           => (int) ($row['width']  ?? 0),
             'height'          => (int) ($row['height'] ?? 0),
-            'content'         => $content,
-            'style'           => $style,
             'render_progress' => (int)    ($row['render_progress'] ?? 0),
             'render_message'  => (string) ($row['render_message']  ?? ''),
             'last_render_id'  => isset($row['last_render_id']) && $row['last_render_id'] !== null
@@ -143,5 +146,18 @@ final class ProjectRepository
             'created_at'      => (string) ($row['created_at'] ?? ''),
             'updated_at'      => (string) ($row['updated_at'] ?? ''),
         ];
+    }
+
+    /**
+     * Decode a JSON column as an object (never a plain `[]` for empty).
+     *
+     * @return \stdClass|array<string,mixed>
+     */
+    private static function decodeJsonObject(mixed $raw): \stdClass|array
+    {
+        if (!is_string($raw) || $raw === '') return new \stdClass();
+        $decoded = json_decode($raw, true);
+        if (!is_array($decoded) || $decoded === []) return new \stdClass();
+        return $decoded;
     }
 }

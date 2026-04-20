@@ -17,7 +17,7 @@ final class ProjectsController
     {
         $user = Api::requireAuth();
         $rows = ProjectRepository::listForUser((int) $user['id']);
-        $projects = array_map([ProjectRepository::class, 'toApi'], $rows);
+        $projects = array_map([ProjectRepository::class, 'toApiSummary'], $rows);
         return ['projects' => $projects];
     }
 
