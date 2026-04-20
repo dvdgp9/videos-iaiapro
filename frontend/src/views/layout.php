@@ -31,6 +31,7 @@ $user = Auth::currentUser();
         --ok: #1f8f61;
         --ring: rgba(20,122,90,.28);
         --shadow: 0 24px 48px -36px rgba(20, 55, 42, 0.45);
+        color-scheme: light;
     }
     * { box-sizing: border-box; }
     body {

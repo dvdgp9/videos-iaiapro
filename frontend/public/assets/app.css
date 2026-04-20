@@ -31,7 +31,16 @@
 .field select {
     width:100%; padding:.7rem .85rem; border-radius:8px; border:1px solid var(--border);
     background:var(--card); color:var(--text); font-size:1rem;
+    appearance:auto;
+    -webkit-appearance:menulist;
+    -moz-appearance:menulist;
+    color-scheme:light;
+    -webkit-text-fill-color:var(--text);
     transition: border-color .2s ease, box-shadow .2s ease;
+}
+.field select option {
+    color:var(--text);
+    background:var(--card);
 }
 .field textarea:focus, .field select:focus { outline:0; border-color:var(--accent); box-shadow:0 0 0 3px var(--ring); }
 .field input[type=color] { height:42px; width:100%; background:var(--card); border:1px solid var(--border); border-radius:8px; cursor:pointer; }
