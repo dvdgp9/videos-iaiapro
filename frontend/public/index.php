@@ -5,10 +5,13 @@ declare(strict_types=1);
 require_once dirname(__DIR__) . '/src/bootstrap.php';
 
 use App\Auth\Auth;
+use App\Auth\SessionStore;
 use App\Http\Router;
 use App\Http\View;
 use App\Http\Middleware;
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\TemplatesController;
+use App\Http\Controllers\ProjectsController;
 
 // Built-in PHP server: serve static files directly.
 if (PHP_SAPI === 'cli-server') {
@@ -68,5 +71,26 @@ $router->get('/api/me', static function (): array {
         ],
     ];
 });
+
+// CSRF token for the current session (needed by clients that do JSON fetches).
+$router->get('/api/csrf', static function (): array {
+    $sid = SessionStore::currentId();
+    if ($sid === null) {
+        http_response_code(401);
+        return ['error' => 'unauthenticated'];
+    }
+    return ['csrf' => SessionStore::csrfToken($sid)];
+});
+
+// --- Templates (catalogue) ---
+$router->get('/api/templates',      [TemplatesController::class, 'index']);
+$router->get('/api/templates/{id}', [TemplatesController::class, 'show']);
+
+// --- Projects CRUD ---
+$router->get   ('/api/projects',      [ProjectsController::class, 'index']);
+$router->post  ('/api/projects',      [ProjectsController::class, 'store']);
+$router->get   ('/api/projects/{id}', [ProjectsController::class, 'show']);
+$router->put   ('/api/projects/{id}', [ProjectsController::class, 'update']);
+$router->delete('/api/projects/{id}', [ProjectsController::class, 'destroy']);
 
 $router->dispatch($_SERVER['REQUEST_METHOD'] ?? 'GET', $_SERVER['REQUEST_URI'] ?? '/');
