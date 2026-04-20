@@ -50,7 +50,7 @@ final class RenderService
                 'project_dir' => $projectDir,
                 'output_path' => $outputPath,
                 'quality'     => (string) Env::get('RENDER_QUALITY', 'standard'),
-                'fps'         => (int)    Env::get('RENDER_FPS', 30),
+                'fps'         => (int)    Env::get('RENDER_FPS', '30'),
                 'format'      => (string) Env::get('RENDER_FORMAT', 'mp4'),
             ]);
         } catch (\Throwable $e) {
