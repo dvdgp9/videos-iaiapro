@@ -1,0 +1,18 @@
+# Front controller: send any request that does NOT match an existing file or
+# directory to index.php. This lets the PHP router own the URL space.
+
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+
+    # Do not rewrite requests for real files or directories (CSS, JS, images).
+    RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteCond %{REQUEST_FILENAME} !-d
+    RewriteRule ^ index.php [L]
+</IfModule>
+
+# Defensive: disable directory listings and block access to dotfiles/backup files.
+Options -Indexes
+
+<FilesMatch "^\.|~$|\.bak$|\.swp$">
+    Require all denied
+</FilesMatch>
