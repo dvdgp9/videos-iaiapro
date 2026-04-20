@@ -1,0 +1,77 @@
+{
+    "id": "basic-promo",
+    "name": "Promo básico",
+    "description": "Título, subtítulo, logo y llamada a la acción con animaciones suaves. Ideal para anuncios cortos.",
+    "duration_seconds": 10,
+    "formats": ["16:9", "9:16", "1:1"],
+    "default_format": "16:9",
+    "fields": [
+        {
+            "key": "title",
+            "type": "string",
+            "label": "Título principal",
+            "required": true,
+            "max_length": 80,
+            "placeholder": "Tu mensaje aquí"
+        },
+        {
+            "key": "subtitle",
+            "type": "string",
+            "label": "Subtítulo",
+            "required": false,
+            "max_length": 160,
+            "placeholder": "Una línea de apoyo (opcional)"
+        },
+        {
+            "key": "cta",
+            "type": "string",
+            "label": "Llamada a la acción",
+            "required": false,
+            "max_length": 40,
+            "default": "Saber más"
+        },
+        {
+            "key": "brand_name",
+            "type": "string",
+            "label": "Nombre de marca",
+            "required": false,
+            "max_length": 40
+        }
+    ],
+    "style_fields": [
+        {
+            "key": "primary_color",
+            "type": "color",
+            "label": "Color principal (fondo)",
+            "default": "#0f172a"
+        },
+        {
+            "key": "secondary_color",
+            "type": "color",
+            "label": "Color de acento (CTA / subrayados)",
+            "default": "#f59e0b"
+        },
+        {
+            "key": "text_color",
+            "type": "color",
+            "label": "Color del texto",
+            "default": "#ffffff"
+        }
+    ],
+    "assets": [
+        {
+            "key": "logo",
+            "role": "logo",
+            "required": false,
+            "accept": "image/png,image/jpeg,image/webp,image/svg+xml",
+            "label": "Logo (esquina superior)"
+        },
+        {
+            "key": "main_image",
+            "role": "main_image",
+            "required": false,
+            "accept": "image/png,image/jpeg,image/webp",
+            "label": "Imagen principal (fondo detrás del texto)"
+        }
+    ]
+}
