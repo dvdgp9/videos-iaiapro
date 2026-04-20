@@ -4,10 +4,13 @@ declare(strict_types=1);
 // frontend/public/index.php -> frontend/src/bootstrap.php
 require_once dirname(__DIR__) . '/src/bootstrap.php';
 
+use App\Auth\Auth;
 use App\Http\Router;
-use App\Support\Env;
+use App\Http\View;
+use App\Http\Middleware;
+use App\Http\Controllers\AuthController;
 
-// Serve static files when using the PHP built-in server.
+// Built-in PHP server: serve static files directly.
 if (PHP_SAPI === 'cli-server') {
     $file = __DIR__ . parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
     if (is_file($file) && $file !== __FILE__) {
@@ -17,29 +20,53 @@ if (PHP_SAPI === 'cli-server') {
 
 $router = new Router();
 
+// --- Public pages ---
 $router->get('/', static function (): string {
-    $appUrl = htmlspecialchars(Env::get('APP_URL', ''), ENT_QUOTES);
-    return <<<HTML
-<!doctype html>
-<meta charset="utf-8">
-<title>videos.iaiapro.com</title>
-<style>
-    body { font-family: system-ui, sans-serif; max-width: 720px; margin: 4rem auto; padding: 0 1rem; color: #222; }
-    h1 { margin-bottom: 0.2rem; }
-    .muted { color: #666; }
-    code { background: #f4f4f4; padding: 0.1rem 0.3rem; border-radius: 3px; }
-</style>
-<h1>videos.iaiapro.com</h1>
-<p class="muted">Bootstrap OK — PHP router funcionando.</p>
-<p>APP_URL: <code>$appUrl</code></p>
-<p>Siguiente paso del plan: tarea <strong>0.3 Migraciones MySQL iniciales</strong>.</p>
-HTML;
+    return View::render('home', ['title' => 'videos.iaiapro.com']);
 });
 
+// --- Auth ---
+$router->get ('/login',    [AuthController::class, 'showLogin']);
+$router->post('/login',    [AuthController::class, 'doLogin']);
+$router->get ('/register', [AuthController::class, 'showRegister']);
+$router->post('/register', [AuthController::class, 'doRegister']);
+$router->post('/logout',   [AuthController::class, 'doLogout']);
+
+// --- Authenticated area ---
+$router->get('/dashboard', static function (): string {
+    Middleware::requireAuth();
+    return View::render('dashboard', [
+        'title' => 'Panel — videos.iaiapro.com',
+        'user'  => Auth::currentUser(),
+    ]);
+});
+
+// --- JSON: health + current user ---
 $router->get('/health', static fn (): array => [
-    'status' => 'ok',
+    'status'  => 'ok',
     'service' => 'videos.iaiapro.com',
-    'time' => date(DATE_ATOM),
+    'time'    => date(DATE_ATOM),
 ]);
+
+$router->get('/api/me', static function (): array {
+    $u = Auth::currentUser();
+    if (!$u) {
+        http_response_code(401);
+        return ['error' => 'unauthenticated'];
+    }
+    return [
+        'id'    => (int) $u['id'],
+        'email' => $u['email'],
+        'name'  => $u['name'],
+        'quota' => [
+            'render_seconds' => (int) $u['quota_render_seconds'],
+            'storage_mb'     => (int) $u['quota_storage_mb'],
+        ],
+        'used'  => [
+            'render_seconds' => (int) $u['used_render_seconds'],
+            'storage_mb'     => (int) $u['used_storage_mb'],
+        ],
+    ];
+});
 
 $router->dispatch($_SERVER['REQUEST_METHOD'] ?? 'GET', $_SERVER['REQUEST_URI'] ?? '/');
