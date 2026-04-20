@@ -245,7 +245,7 @@ const TEMPLATE = <?= json_encode($template, JSON_UNESCAPED_UNICODE | JSON_UNESCA
             if (st === 'rendering' || st === 'queued') {
                 setStatus('running', rm || 'Renderizando…');
                 setProgress(rp);
-            } else if (st === 'ready') {
+            } else if (st === 'completed' || st === 'ready') {
                 setStatus('ok', 'Render completado.');
                 setProgress(100);
                 if (s.render && s.render.video_url) {

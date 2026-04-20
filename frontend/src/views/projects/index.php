@@ -30,10 +30,10 @@ use App\Http\View;
                     <?php
                         $st = (string) ($p['status'] ?? 'draft');
                         $cls = match ($st) {
-                            'ready'    => 'ok',
-                            'failed'   => 'err',
+                            'completed','ready' => 'ok',
+                            'failed'            => 'err',
                             'rendering','queued' => 'run',
-                            default    => '',
+                            default             => '',
                         };
                     ?>
                     <span class="badge <?= $cls ?>"><?= View::e($st) ?></span>

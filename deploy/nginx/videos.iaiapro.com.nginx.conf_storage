@@ -14,6 +14,16 @@ location ^~ /storage/renders/ {
     location ~ /\. { deny all; return 404; }
 }
 
+location ~ ^/storage/projects/\d+/assets/ {
+    root /home/dvdgp/data/videos;
+    rewrite ^/storage/(.*)$ /$1 break;
+    autoindex off;
+    expires 7d;
+    add_header Cache-Control "public, max-age=604800";
+    access_log off;
+    location ~ /\. { deny all; return 404; }
+}
+
 location ^~ /storage/thumbnails/ {
     alias /home/dvdgp/data/videos/thumbnails/;
     autoindex off;

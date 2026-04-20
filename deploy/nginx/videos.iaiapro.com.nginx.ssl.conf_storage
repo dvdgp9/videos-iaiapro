@@ -17,3 +17,16 @@ location ^~ /storage/thumbnails/ {
     access_log off;
     location ~ /\. { deny all; return 404; }
 }
+
+# Project assets uploaded by users (logos, images). Only still images;
+# user_id scoping is enforced by PHP on write — the files themselves are
+# not secret (they're baked into the rendered MP4 anyway).
+location ~ ^/storage/projects/\d+/assets/ {
+    root /home/dvdgp/data/videos;
+    rewrite ^/storage/(.*)$ /$1 break;
+    autoindex off;
+    expires 7d;
+    add_header Cache-Control "public, max-age=604800";
+    access_log off;
+    location ~ /\. { deny all; return 404; }
+}
