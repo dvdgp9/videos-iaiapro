@@ -14,13 +14,13 @@ location ^~ /storage/renders/ {
     location ~ /\. { deny all; return 404; }
 }
 
-location ~ ^/storage/projects/\d+/assets/ {
-    root /home/dvdgp/data/videos;
-    rewrite ^/storage/(.*)$ /$1 break;
+location ^~ /storage/projects/ {
+    alias /home/dvdgp/data/videos/projects/;
     autoindex off;
     expires 7d;
     add_header Cache-Control "public, max-age=604800";
     access_log off;
+    location ~ ^/storage/projects/\d+/(?!assets/) { deny all; return 404; }
     location ~ /\. { deny all; return 404; }
 }
 

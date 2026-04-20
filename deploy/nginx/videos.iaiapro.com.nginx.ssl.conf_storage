@@ -18,15 +18,16 @@ location ^~ /storage/thumbnails/ {
     location ~ /\. { deny all; return 404; }
 }
 
-# Project assets uploaded by users (logos, images). Only still images;
-# user_id scoping is enforced by PHP on write — the files themselves are
-# not secret (they're baked into the rendered MP4 anyway).
-location ~ ^/storage/projects/\d+/assets/ {
-    root /home/dvdgp/data/videos;
-    rewrite ^/storage/(.*)$ /$1 break;
+# Project assets uploaded by users (logos, images).
+# `^~` stops regex matching so nginx goes straight to disk.
+location ^~ /storage/projects/ {
+    alias /home/dvdgp/data/videos/projects/;
     autoindex off;
     expires 7d;
     add_header Cache-Control "public, max-age=604800";
     access_log off;
+    # Only the `assets/` subdir is meant to be publicly readable; the rest
+    # (index.html, hyperframes.json, meta.json) is build output, not for humans.
+    location ~ ^/storage/projects/\d+/(?!assets/) { deny all; return 404; }
     location ~ /\. { deny all; return 404; }
 }
