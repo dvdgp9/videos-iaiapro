@@ -1,0 +1,24 @@
+[Unit]
+Description=IAIAPRO Videos Backend (Node render worker)
+After=network.target
+
+[Service]
+Type=simple
+User=dvdgp
+Group=dvdgp
+WorkingDirectory=/home/dvdgp/apps/videos-iaiapro/backend
+EnvironmentFile=/home/dvdgp/apps/videos-iaiapro/.env
+Environment=NODE_ENV=production
+ExecStart=/usr/bin/node /home/dvdgp/apps/videos-iaiapro/backend/src/server.js
+Restart=always
+RestartSec=5
+
+# Hardening — the worker only needs its own working dir, data dirs, and /tmp.
+NoNewPrivileges=true
+ProtectSystem=full
+ProtectHome=read-only
+ReadWritePaths=/home/dvdgp/data/videos /home/dvdgp/apps/videos-iaiapro/backend/node_modules
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target

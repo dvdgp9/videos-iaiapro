@@ -1,0 +1,9 @@
+# videos.iaiapro.com — custom nginx include (HTTP :80, path /api)
+#
+# After R.5 cutover: /api/* is handled by PHP through the default Apache
+# proxy, NOT by the Node worker. Keeping this file empty (instead of
+# deleting it) so Hestia's glob `include nginx.conf_*;` has nothing to add
+# and falls back to the standard location blocks.
+#
+# The Node worker listens only on 127.0.0.1:3001 and PHP reaches it from
+# inside the same box. There is no public route to Node.

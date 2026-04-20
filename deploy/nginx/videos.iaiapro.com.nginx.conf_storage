@@ -1,0 +1,24 @@
+# videos.iaiapro.com — custom nginx include (HTTP :80, path /storage)
+#
+# Static file service for rendered videos and public thumbnails. Uploads
+# are NOT exposed here (served by PHP with auth). Only `renders/` and
+# `thumbnails/` are public.
+
+location ^~ /storage/renders/ {
+    alias /home/dvdgp/data/videos/renders/;
+    autoindex off;
+    expires 30d;
+    add_header Cache-Control "public, max-age=2592000, immutable";
+    access_log off;
+    # Block dotfiles explicitly inside this location.
+    location ~ /\. { deny all; return 404; }
+}
+
+location ^~ /storage/thumbnails/ {
+    alias /home/dvdgp/data/videos/thumbnails/;
+    autoindex off;
+    expires 30d;
+    add_header Cache-Control "public, max-age=2592000";
+    access_log off;
+    location ~ /\. { deny all; return 404; }
+}

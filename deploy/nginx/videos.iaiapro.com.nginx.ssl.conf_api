@@ -1,0 +1,4 @@
+# videos.iaiapro.com — custom nginx include (HTTPS :443, path /api)
+#
+# Same as nginx.conf_api: empty after the R.5 cutover. /api/* now goes to
+# PHP via the default Hestia proxy-to-Apache flow.

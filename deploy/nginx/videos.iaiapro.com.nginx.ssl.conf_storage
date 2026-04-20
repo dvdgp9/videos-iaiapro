@@ -1,0 +1,19 @@
+# videos.iaiapro.com — custom nginx include (HTTPS :443, path /storage)
+
+location ^~ /storage/renders/ {
+    alias /home/dvdgp/data/videos/renders/;
+    autoindex off;
+    expires 30d;
+    add_header Cache-Control "public, max-age=2592000, immutable";
+    access_log off;
+    location ~ /\. { deny all; return 404; }
+}
+
+location ^~ /storage/thumbnails/ {
+    alias /home/dvdgp/data/videos/thumbnails/;
+    autoindex off;
+    expires 30d;
+    add_header Cache-Control "public, max-age=2592000";
+    access_log off;
+    location ~ /\. { deny all; return 404; }
+}
